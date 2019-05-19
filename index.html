@@ -1,0 +1,306 @@
+<html>
+
+<head>
+    <title>BitMask</title>
+    <meta name="description" content="Generate JSON represented bitmasks from image selections for machine learning applications.">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/1.7.22/fabric.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+    <link rel="icon" type="image/png" sizes="192x192" href="https://monixlabs.com/media/favico/android-chrome-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="https://monixlabs.com/media/favico/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="https://monixlabs.com/media/favico/favicon-16x16.png">
+
+    <style>
+        body {
+            background-color: #efefef;
+        }
+        
+        .list-group-item,
+        #wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .form-group {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid" id="wrapper" style="height: 100vh; margin: 0; padding: 0;">
+        <div class="container" style="margin-left: auto; margin-right: auto;">
+
+            <div class="card" id="cardContainer" style="width: 50%; margin-left: auto; margin-right: auto;">
+                <div class="card-body" id="cardBody" style="">
+
+                    <ul class="list-group" id="uploadList">
+                        <li class="list-group-item">
+                            <input type="text" class="form-control" placeholder="Image URL" id="imageURL">
+                        </li>
+                        <li class="list-group-item">
+                            <label class="btn btn-default" style="background-color: #31bff7; color: white; cursor: pointer; width: 100%;">
+                                Browse
+                                <input type="file" id="fileUpload" hidden>
+                            </label>
+                        </li>
+                        <li class="list-group-item" style="min-height:100px;" id="imageDrop">
+                            <span class="text-muted"><i>Drag and Drop</i></span>
+                        </li>
+
+                    </ul>
+
+                    <canvas id="imageCanvas" style="margin-left: auto; margin-right: auto; display:none;"></canvas>
+
+                </div>
+            </div>
+
+        </div>
+        <div class="container-fluid" style="position: fixed; bottom: 0; padding: 0; display: none;" id="navContainer">
+            <nav id="dataNav" style=" margin-top: 15px;">
+                <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                    <a class="nav-item nav-link active" id="nav-json-tab" data-toggle="tab" href="#nav-json" role="tab" aria-controls="nav-json" aria-selected="true">JSON</a>
+
+                    <a class="nav-item nav-link" id="nav-options-tab" data-toggle="tab" href="#nav-options" role="tab" aria-controls="nav-options">Options</a>
+                </div>
+            </nav>
+            <div id="dataTab" class="tab-content" style="">
+                <div class="tab-pane fade show active" id="nav-json" role="tabpanel" aria-labelledby="nav-json-tab">
+                    <div class="form-group">
+                        <textarea class="form-control" id="jsonTextArea" rows="5"></textarea>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade show" id="nav-options" role="tabpanel" aria-labelledby="nav-options-tab">
+                    <div class="form-group" style="padding: 10px; background-color: white;">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="outputFormat" id="pixelOutputYX" value="pixelOutputYX" checked>
+                            <label class="form-check-label" for="pixelOutputYX">
+                                Pixel Coordinate Array [y,x]
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="outputFormat" id="pixelOutputXY" value="pixelOutputXY">
+                            <label class="form-check-label" for="pixelOutputXY">
+                                Pixel Coordinate Array [x,y]
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="outputFormat" id="bitmaskOutputXY" value="bitmaskOutputXY">
+                            <label class="form-check-label" for="bitmaskOutputXY">
+                                Bitmask Array [x,y]
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="outputFormat" id="bitmaskOutputYX" value="bitmaskOutputYX">
+                            <label class="form-check-label" for="bitmaskOutputYX">
+                                Bitmask Array [y,x]
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var image;
+        var fileRead = new FileReader();
+
+        function enableEditorUI() {
+            $("#uploadList").css("display", "none");
+            $("#cardContainer").css("width", "auto");
+            $("#cardBody").css("padding", "0");
+            $("#imageCanvas").css("display", "block");
+            $("#wrapper").removeAttr("id");
+        }
+
+        $("#fileUpload").on("change", function() {
+            if (this.files && this.files[0]) {
+                fileRead.addEventListener("load", function(e) {
+                    image = e.target.result;
+                    enableEditorUI();
+                    maskEditor();
+                });
+                fileRead.readAsDataURL(this.files[0]);
+            }
+        });
+
+        $("#imageURL").on("change", function() {
+            $("<img>", {
+                src: $("#imageURL").val(),
+                error: function() {
+
+                },
+                load: function() {
+                    //Request the image's BLOB to create a base64 representation. Needed to avoid cross-origin security policies with the canvas API.
+                    var imgRequest = new XMLHttpRequest();
+
+                    imgRequest.open("GET", $("#imageURL").val());
+                    imgRequest.responseType = "blob";
+                    imgRequest.send();
+                    imgRequest.addEventListener("load", function() {
+                        fileRead.readAsDataURL(imgRequest.response);
+                        fileRead.addEventListener("loadend", function() {
+                            image = fileRead.result;
+                            enableEditorUI();
+                            maskEditor();
+                        });
+                    });
+                }
+            });
+        });
+
+        $("#imageDrop").on("dragover", function(e) {
+            e.preventDefault();
+            //e.stopPropagation();
+        });
+
+        $("#imageDrop").on("dragenter", function(e) {
+            e.preventDefault();
+            //e.stopPropagation();
+        });
+
+        $("#imageDrop").on("drop", function(e) {
+            e.preventDefault();
+            fileRead.addEventListener("load", function(f) {
+                image = f.target.result;
+                enableEditorUI();
+                maskEditor();
+            });
+            fileRead.readAsDataURL(e.originalEvent.dataTransfer.items[0].getAsFile());
+        });
+
+        function maskEditor() {
+            var canvas = document.getElementById('imageCanvas');
+            var ctx = canvas.getContext('2d');
+            var img = document.createElement('IMG');
+
+            function mask(arr1, arr2) {
+                var outputFormat = $('input[name=outputFormat]:checked').val();
+                var height = arr1["height"];
+                var width = arr1["width"];
+                var maskArray = [];
+                
+                switch(outputFormat)
+                {
+                    case "pixelOutputYX":
+                        for (i = 0; i < height; i++) {
+                            maskArray[i] = [];
+                        }
+
+                        for (p = 0; p < arr1["data"].length; p++) {
+                        if ((arr1["data"][4 * p + 0] != arr2["data"][4 * p + 0]) || (arr1["data"][4 * p + 1] != arr2["data"][4 * p + 1]) || (arr1["data"][4 * p + 2] != arr2["data"][4 * p + 2]) || (arr1["data"][4 * p + 3] != arr2["data"][4 * p + 3])) {
+                                var y = parseInt(p / width, 10);
+                                var x = p - y * width;
+                                maskArray[y].push(x);
+                            }
+                        }
+                    break;
+
+                    case "pixelOutputXY":
+                        for (i = 0; i < width; i++) {
+                            maskArray[i] = [];
+                        }
+
+                        for (p = 0; p < arr1["data"].length; p++) {
+                        if ((arr1["data"][4 * p + 0] != arr2["data"][4 * p + 0]) || (arr1["data"][4 * p + 1] != arr2["data"][4 * p + 1]) || (arr1["data"][4 * p + 2] != arr2["data"][4 * p + 2]) || (arr1["data"][4 * p + 3] != arr2["data"][4 * p + 3])) {
+                                var y = parseInt(p / width, 10);
+                                var x = p - y * width;
+                                maskArray[x].push(y);
+                            }
+                        }
+                    break;
+
+                    case "bitmaskOutputYX":
+                        for (i = 0; i < height; i++) {
+                            maskArray[i] = [];
+                            for(j = 0; j < width; j++)
+                            {
+                                maskArray[i][j] = 0;
+                            }
+                        }
+
+                        for (p = 0; p < arr1["data"].length; p++) {
+                        if ((arr1["data"][4 * p + 0] != arr2["data"][4 * p + 0]) || (arr1["data"][4 * p + 1] != arr2["data"][4 * p + 1]) || (arr1["data"][4 * p + 2] != arr2["data"][4 * p + 2]) || (arr1["data"][4 * p + 3] != arr2["data"][4 * p + 3])) {
+                                var y = parseInt(p / width, 10);
+                                var x = p - y * width;
+                                maskArray[y][x] = 1;
+                            }
+                        }
+                    break;
+
+                    case "bitmaskOutputXY":
+                        for (i = 0; i < width; i++) {
+                            maskArray[i] = [];
+                            for(j = 0; j < height; j++)
+                            {
+                                maskArray[i][j] = 0;
+                            }
+                        }
+
+                        for (p = 0; p < arr1["data"].length; p++) {
+                        if ((arr1["data"][4 * p + 0] != arr2["data"][4 * p + 0]) || (arr1["data"][4 * p + 1] != arr2["data"][4 * p + 1]) || (arr1["data"][4 * p + 2] != arr2["data"][4 * p + 2]) || (arr1["data"][4 * p + 3] != arr2["data"][4 * p + 3])) {
+                                var y = parseInt(p / width, 10);
+                                var x = p - y * width;
+                                maskArray[x][y] = 1;
+                            }
+                        }
+                    break;
+                }
+
+                $("#jsonTextArea").text(JSON.stringify(maskArray));
+            }
+
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                var OwnCanv = new fabric.Canvas('imageCanvas', {
+                    isDrawingMode: true,
+                    width: img.width,
+                    height: img.height
+                });
+
+                $(".canvas-container").css("height", "0");
+                $(".canvas-container").css("margin-left", "auto");
+                $(".canvas-container").css("margin-right", "auto");
+                $("#navContainer").css("display", "block");
+
+                if (canvas.height > $(window).height() - $("#navContainer").height()) {
+                    $("body").height($("#navContainer").height() + canvas.height);
+                }
+                OwnCanv.calcOffset();
+
+                var imgInstance = new fabric.Image(img, {
+                    left: 0,
+                    top: 0,
+                });
+                OwnCanv.add(imgInstance);
+
+                OwnCanv.freeDrawingBrush.color = "rgba(0, 0, 0, 0.75)";
+                OwnCanv.freeDrawingBrush.width = 25;
+
+                OwnCanv.on('path:created', function(options) {
+                    var orig = canvas.getContext('2d').getImageData(0, 0, img.width, img.height);
+                    var path = options.path;
+                    path.render(ctx);
+                    OwnCanv.add(imgInstance);
+
+                    var newImage = OwnCanv.getContext().getImageData(0, 0, img.width, img.height);
+
+                    mask(orig, newImage);
+                });
+
+            }
+            img.src = image;
+        }
+    </script>
+</body>
+</html>
