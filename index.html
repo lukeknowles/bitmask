@@ -34,10 +34,8 @@
 <body>
     <div class="container-fluid" id="wrapper" style="height: 100vh; margin: 0; padding: 0;">
         <div class="container" style="margin-left: auto; margin-right: auto;">
-
             <div class="card" id="cardContainer" style="width: 50%; margin-left: auto; margin-right: auto;">
                 <div class="card-body" id="cardBody" style="">
-
                     <ul class="list-group" id="uploadList">
                         <li class="list-group-item">
                             <input type="text" class="form-control" placeholder="Image URL" id="imageURL">
@@ -51,11 +49,8 @@
                         <li class="list-group-item" style="min-height:100px;" id="imageDrop">
                             <span class="text-muted"><i>Drag and Drop</i></span>
                         </li>
-
                     </ul>
-
                     <canvas id="imageCanvas" style="margin-left: auto; margin-right: auto; display:none;"></canvas>
-
                 </div>
             </div>
 
@@ -64,7 +59,6 @@
             <nav id="dataNav" style=" margin-top: 15px;">
                 <div class="nav nav-tabs" id="nav-tab" role="tablist">
                     <a class="nav-item nav-link active" id="nav-json-tab" data-toggle="tab" href="#nav-json" role="tab" aria-controls="nav-json" aria-selected="true">JSON</a>
-
                     <a class="nav-item nav-link" id="nav-options-tab" data-toggle="tab" href="#nav-options" role="tab" aria-controls="nav-options">Options</a>
                 </div>
             </nav>
@@ -262,7 +256,7 @@
             img.onload = function() {
                 canvas.width = img.width;
                 canvas.height = img.height;
-                var OwnCanv = new fabric.Canvas('imageCanvas', {
+                var fabricCanvas = new fabric.Canvas('imageCanvas', {
                     isDrawingMode: true,
                     width: img.width,
                     height: img.height
@@ -276,24 +270,24 @@
                 if (canvas.height > $(window).height() - $("#navContainer").height()) {
                     $("body").height($("#navContainer").height() + canvas.height);
                 }
-                OwnCanv.calcOffset();
+                fabricCanvas.calcOffset();
 
-                var imgInstance = new fabric.Image(img, {
+                var fabricImage = new fabric.Image(img, {
                     left: 0,
                     top: 0,
                 });
-                OwnCanv.add(imgInstance);
+                fabricCanvas.add(fabricImage);
 
-                OwnCanv.freeDrawingBrush.color = "rgba(0, 0, 0, 0.75)";
-                OwnCanv.freeDrawingBrush.width = 25;
+                fabricCanvas.freeDrawingBrush.color = "rgba(0, 0, 0, 0.75)";
+                fabricCanvas.freeDrawingBrush.width = 25;
 
-                OwnCanv.on('path:created', function(options) {
+                fabricCanvas.on('path:created', function(options) {
                     var orig = canvas.getContext('2d').getImageData(0, 0, img.width, img.height);
                     var path = options.path;
                     path.render(ctx);
-                    OwnCanv.add(imgInstance);
+                    fabricCanvas.add(fabricImage);
 
-                    var newImage = OwnCanv.getContext().getImageData(0, 0, img.width, img.height);
+                    var newImage = fabricCanvas.getContext().getImageData(0, 0, img.width, img.height);
 
                     mask(orig, newImage);
                 });
