@@ -2,6 +2,8 @@
 ###### Generate JSON representations of bitmasks from image selections for machine learning applications.
 [DEMO](https://monixlabs.com/bitmask)
 
+This uses [Bootstrap](https://github.com/twbs/bootstrap), [jQuery](https://github.com/jquery/jquery), and [fabric.js](https://github.com/fabricjs/fabric.js)
+
 ![Bitmask in use](https://i.imgur.com/tfCFd8n.gif)
 
 ## Data Output
